@@ -48,7 +48,13 @@ class AIMResponse extends AbstractResponse
      */
     public function getResultCode()
     {
-        return intval((string)$this->data->transactionResponse[0]->responseCode);
+        //Detect pre-processing errors.
+        if($this->data->messages->resultCode == "Error") {
+             return $this->data->messages->message->code;
+        }else {
+            return intval((string)$this->data->transactionResponse[0]->responseCode);
+        }
+
     }
 
     /**
@@ -67,6 +73,10 @@ class AIMResponse extends AbstractResponse
         } elseif (isset($this->data->transactionResponse[0]->errors)) {
             // In case of an unsuccessful transaction, an "errors" element is present
             $code = intval((string)$this->data->transactionResponse[0]->errors[0]->error[0]->errorCode);
+        }elseif ($this->data->messages->resultCode == "Error") {
+            //detect data validation errors.
+            $code = $this->data->messages->message->code;
+
         }
 
         return $code;
@@ -88,6 +98,11 @@ class AIMResponse extends AbstractResponse
         } elseif (isset($this->data->transactionResponse[0]->errors)) {
             // In case of an unsuccessful transaction, an "errors" element is present
             $message = (string)$this->data->transactionResponse[0]->errors[0]->error[0]->errorText;
+
+        }elseif ($this->data->messages->resultCode  == "Error") {
+            // In case a error is thrown this way.(the sdk has multiple wats of throwing errors) This particular error happens during data validation.
+            $message = $this->data->messages->message->text[0];
+
         }
 
         return $message;
